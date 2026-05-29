@@ -1,0 +1,301 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── ENUMS ───────────────────────────────────────────────────────────────────
+
+enum UserRole {
+  MASTER_ADMIN
+  ORG_ADMIN
+  SUPPORT_AGENT
+  CLIENT
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  WAITING_CLIENT
+  RESOLVED
+  CLOSED
+}
+
+enum TicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum CommentType {
+  PUBLIC
+  INTERNAL
+}
+
+enum HistoryAction {
+  CREATED
+  STATUS_CHANGED
+  PRIORITY_CHANGED
+  ASSIGNED
+  UNASSIGNED
+  COMMENTED
+  ATTACHMENT_ADDED
+  ATTACHMENT_REMOVED
+  RESOLVED
+  CLOSED
+  REOPENED
+  TAG_ADDED
+  TAG_REMOVED
+}
+
+// ─── ORGANIZATION (TENANT) ───────────────────────────────────────────────────
+
+model Organization {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  logoUrl   String?
+  plan      String   @default("free")
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users       UserOrganization[]
+  projects    Project[]
+  slaPolicies SLAPolicy[]
+  tags        Tag[]
+
+  @@index([slug])
+  @@map("organizations")
+}
+
+// ─── USER ─────────────────────────────────────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String
+  avatarUrl     String?
+  passwordHash  String
+  isMasterAdmin Boolean   @default(false)
+  isActive      Boolean   @default(true)
+  lastLoginAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  organizations   UserOrganization[]
+  projects        UserProject[]
+  createdTickets  Ticket[]           @relation("TicketCreatedBy")
+  assignedTickets Ticket[]           @relation("TicketAssignedTo")
+  comments        TicketComment[]
+  history         TicketHistory[]
+  sessions        UserSession[]
+
+  @@index([email])
+  @@map("users")
+}
+
+model UserSession {
+  id           String   @id @default(cuid())
+  userId       String
+  refreshToken String   @unique
+  userAgent    String?
+  ipAddress    String?
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([refreshToken])
+  @@map("user_sessions")
+}
+
+// ─── USER <> ORGANIZATION ─────────────────────────────────────────────────────
+
+model UserOrganization {
+  id             String    @id @default(cuid())
+  userId         String
+  organizationId String
+  role           UserRole  @default(CLIENT)
+  invitedAt      DateTime  @default(now())
+  acceptedAt     DateTime?
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, organizationId])
+  @@index([organizationId])
+  @@map("user_organizations")
+}
+
+// ─── PROJECT ──────────────────────────────────────────────────────────────────
+
+model Project {
+  id             String   @id @default(cuid())
+  organizationId String
+  name           String
+  description    String?
+  color          String   @default("#6366f1")
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  members      UserProject[]
+  tickets      Ticket[]
+  slaPolicy    SLAPolicy?
+
+  @@index([organizationId])
+  @@map("projects")
+}
+
+model UserProject {
+  userId    String
+  projectId String
+  role      UserRole @default(CLIENT)
+  addedAt   DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@id([userId, projectId])
+  @@index([projectId])
+  @@map("user_projects")
+}
+
+// ─── TICKET ───────────────────────────────────────────────────────────────────
+
+model Ticket {
+  id              String         @id @default(cuid())
+  number          Int
+  organizationId  String
+  projectId       String
+  title           String
+  description     String
+  status          TicketStatus   @default(OPEN)
+  priority        TicketPriority @default(MEDIUM)
+  createdById     String
+  assignedToId    String?
+  slaBreachedAt   DateTime?
+  firstResponseAt DateTime?
+  resolvedAt      DateTime?
+  closedAt        DateTime?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  project     Project            @relation(fields: [projectId], references: [id])
+  createdBy   User               @relation("TicketCreatedBy", fields: [createdById], references: [id])
+  assignedTo  User?              @relation("TicketAssignedTo", fields: [assignedToId], references: [id])
+  comments    TicketComment[]
+  attachments TicketAttachment[]
+  history     TicketHistory[]
+  tags        Tag[]              @relation("TicketTags")
+
+  @@unique([organizationId, number])
+  @@index([organizationId])
+  @@index([projectId])
+  @@index([status])
+  @@index([priority])
+  @@index([assignedToId])
+  @@index([createdAt])
+  @@map("tickets")
+}
+
+// ─── COMMENT ──────────────────────────────────────────────────────────────────
+
+model TicketComment {
+  id        String      @id @default(cuid())
+  ticketId  String
+  userId    String
+  body      String
+  type      CommentType @default(PUBLIC)
+  editedAt  DateTime?
+  createdAt DateTime    @default(now())
+
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@index([ticketId])
+  @@map("ticket_comments")
+}
+
+// ─── ATTACHMENT ───────────────────────────────────────────────────────────────
+
+model TicketAttachment {
+  id           String   @id @default(cuid())
+  ticketId     String
+  uploadedById String
+  fileName     String
+  fileSize     Int
+  mimeType     String
+  storageKey   String
+  createdAt    DateTime @default(now())
+
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId])
+  @@map("ticket_attachments")
+}
+
+// ─── HISTORY (AUDIT LOG) ──────────────────────────────────────────────────────
+
+model TicketHistory {
+  id        String        @id @default(cuid())
+  ticketId  String
+  userId    String
+  action    HistoryAction
+  oldValue  String?
+  newValue  String?
+  createdAt DateTime      @default(now())
+
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@index([ticketId])
+  @@index([createdAt])
+  @@map("ticket_history")
+}
+
+// ─── TAG ──────────────────────────────────────────────────────────────────────
+
+model Tag {
+  id             String @id @default(cuid())
+  organizationId String
+  name           String
+  color          String @default("#94a3b8")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  tickets      Ticket[]     @relation("TicketTags")
+
+  @@unique([organizationId, name])
+  @@map("tags")
+}
+
+// ─── SLA POLICY ───────────────────────────────────────────────────────────────
+
+model SLAPolicy {
+  id                   String   @id @default(cuid())
+  organizationId       String
+  projectId            String?  @unique
+  name                 String
+  lowFirstResponse     Int      @default(1440)
+  mediumFirstResponse  Int      @default(480)
+  highFirstResponse    Int      @default(120)
+  urgentFirstResponse  Int      @default(30)
+  lowResolution        Int      @default(10080)
+  mediumResolution     Int      @default(2880)
+  highResolution       Int      @default(480)
+  urgentResolution     Int      @default(240)
+  createdAt            DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  project      Project?     @relation(fields: [projectId], references: [id])
+
+  @@index([organizationId])
+  @@map("sla_policies")
+}
