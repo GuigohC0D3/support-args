@@ -1,0 +1,29 @@
+{
+  "name": "support-hub",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "db:generate": "turbo run db:generate --filter=@support-hub/database",
+    "db:migrate": "turbo run db:migrate --filter=@support-hub/database",
+    "db:seed": "turbo run db:seed --filter=@support-hub/database",
+    "db:studio": "turbo run db:studio --filter=@support-hub/database"
+  },
+  "devDependencies": {
+    "turbo": "^2.0.0",
+    "prettier": "^3.3.0",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.4.0"
+  },
+  "packageManager": "bun@1.1.0",
+  "engines": {
+    "node": ">=20.0.0",
+    "bun": ">=1.1.0"
+  }
+}

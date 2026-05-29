@@ -1,0 +1,15 @@
+node_modules/
+.turbo/
+dist/
+.next/
+build/
+coverage/
+*.log
+.env
+.env.local
+.env.*.local
+uploads/
+bun.lockb
+
+# AI assistant context files
+CLAUDE.md
