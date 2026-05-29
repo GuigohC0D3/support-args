@@ -1,97 +1,89 @@
 # Support Hub
 
-Centralized multi-tenant SaaS for support ticket management. Multiple organizations share a single platform, with full data isolation per tenant, role-based access control, and real-time SLA tracking.
+SaaS multi-tenant centralizado para gestão de tickets de suporte. Múltiplas organizações compartilham a plataforma com isolamento completo de dados por tenant, controle de acesso baseado em papéis e acompanhamento de SLA em tempo real.
 
 ## Stack
 
-| Layer | Technology |
-|-------|-----------|
+| Camada | Tecnologia |
+|--------|-----------|
 | API | NestJS · Bun · Prisma ORM |
-| Database | PostgreSQL · Redis |
+| Banco de dados | PostgreSQL · Redis |
 | Frontend | Next.js 14 (App Router) · TypeScript · Tailwind CSS |
-| Auth | NextAuth.js · JWT (stateful via Redis) |
+| Autenticação | NextAuth.js · JWT (stateful via Redis) |
 | Monorepo | Turborepo · Bun workspaces |
 | Deploy | Docker Compose · Coolify |
 
-## Repository structure
+## Estrutura do repositório
 
 ```
 support-args/
 ├── apps/
-│   ├── api/          # NestJS REST API (port 3001)
-│   └── web/          # Next.js frontend (port 3000)
+│   ├── api/          # API REST NestJS (porta 3001)
+│   └── web/          # Frontend Next.js (porta 3000)
 ├── packages/
-│   ├── database/     # Prisma schema, migrations, seed
-│   └── types/        # Shared TypeScript types
-├── docs/             # User and admin guides
+│   ├── database/     # Schema Prisma, migrations, seed
+│   └── types/        # Tipos TypeScript compartilhados
+├── docs/             # Guias de usuário e administrador
 ├── docker-compose.yml
 └── .env.example
 ```
 
-## Getting started
+## Primeiros passos
 
-### Prerequisites
+### Pré-requisitos
 
 - [Bun](https://bun.sh) ≥ 1.0
-- [Docker](https://www.docker.com) & Docker Compose
-- `openssl` (for generating secrets)
+- [Docker](https://www.docker.com) e Docker Compose
+- `openssl` (para gerar os secrets)
 
-### Local development
+### Desenvolvimento local
 
 ```bash
-# 1. Copy and fill in the required secrets
+# 1. Copiar o arquivo de variáveis e preencher os secrets obrigatórios
 cp .env.example .env
 
-# Generate secrets — paste each output into .env
+# Gerar secrets — cole cada saída no .env
 openssl rand -base64 64   # → JWT_SECRET
 openssl rand -base64 64   # → JWT_REFRESH_SECRET
 openssl rand -base64 32   # → NEXTAUTH_SECRET
 
-# 2. Start infrastructure
+# 2. Subir a infraestrutura
 docker compose up postgres redis -d
 
-# 3. Install dependencies
+# 3. Instalar dependências
 bun install
 
-# 4. Run migrations and seed (first time only)
+# 4. Migrations e seed (apenas na primeira vez)
 bun run db:migrate
 bun run db:generate
 bun run db:seed
 
-# 5. Start dev servers
+# 5. Iniciar em modo desenvolvimento
 bun run dev
 ```
 
-| Service | URL |
+| Serviço | URL |
 |---------|-----|
 | Frontend | http://localhost:3000 |
 | API | http://localhost:3001 |
 | Swagger | http://localhost:3001/docs |
 | Health check | http://localhost:3001/health |
 
-### Seed credentials
-
-| Role | Email | Password |
-|------|-------|----------|
-| Master Admin | master@supporthub.com | Admin@123 |
-| Support Agent | agent@supporthub.com | Admin@123 |
-| Client | client@supporthub.com | Admin@123 |
-
-## Environment variables
+## Variáveis de ambiente
 
 ```bash
-# Database
+# Banco de dados
 DATABASE_URL=postgresql://postgres:postgres@localhost:5432/supporthub
 
 # Redis
 REDIS_URL=redis://:redis123@localhost:6379
 
-# JWT — generate with: openssl rand -base64 64
-# Never reuse the same value across these three secrets
+# JWT — gere com: openssl rand -base64 64
+# Nunca reutilize o mesmo valor entre os três secrets abaixo
 JWT_SECRET=
 JWT_REFRESH_SECRET=
 
-# NextAuth — generate with: openssl rand -base64 32
+# NextAuth — gere com: openssl rand -base64 32
 NEXTAUTH_URL=http://localhost:3000
 NEXTAUTH_SECRET=
 
@@ -100,63 +92,63 @@ NEXT_PUBLIC_API_URL=http://localhost:3001
 API_URL=http://localhost:3001
 ```
 
-## API modules
+## Módulos da API
 
-| Module | Endpoints | Description |
-|--------|-----------|-------------|
-| Auth | `POST /auth/login` `POST /auth/refresh` `POST /auth/logout` | JWT authentication with Redis-backed token revocation |
-| Users | `GET /users/me` `GET /users` | Profile and user listing per org |
-| Organizations | `GET/POST /organizations` `POST /organizations/:id/members` | Tenant management and member invites |
-| Projects | `GET/POST /projects` | Project scoping per organization |
-| Tickets | `GET/POST /tickets` `PATCH /tickets/:id` `POST /tickets/:id/comments` | Full ticket lifecycle with comment history |
-| Dashboard | `GET /dashboard/metrics` `GET /dashboard/sla` | Aggregated metrics and SLA compliance |
+| Módulo | Endpoints | Descrição |
+|--------|-----------|-----------|
+| Auth | `POST /auth/login` `POST /auth/refresh` `POST /auth/logout` | Autenticação JWT com revogação de token via Redis |
+| Usuários | `GET /users/me` `GET /users` | Perfil e listagem de usuários por organização |
+| Organizações | `GET/POST /organizations` `POST /organizations/:id/members` | Gestão de tenants e convite de membros |
+| Projetos | `GET/POST /projects` | Escopo de projetos por organização |
+| Tickets | `GET/POST /tickets` `PATCH /tickets/:id` `POST /tickets/:id/comments` | Ciclo completo do ticket com histórico de comentários |
+| Dashboard | `GET /dashboard/metrics` `GET /dashboard/sla` | Métricas agregadas e conformidade de SLA |
 
-## Role hierarchy
+## Hierarquia de papéis
 
 ```
-MASTER_ADMIN  →  full platform access
-   ORG_ADMIN  →  manages organization, members, projects
-SUPPORT_AGENT →  handles tickets, internal comments
-      CLIENT  →  creates and tracks own tickets
+MASTER_ADMIN  →  acesso total à plataforma
+   ORG_ADMIN  →  gerencia organização, membros e projetos
+SUPPORT_AGENT →  atende tickets, acessa comentários internos
+      CLIENT  →  cria e acompanha seus próprios tickets
 ```
 
-Access is enforced per-request via `RolesGuard` + `@Roles()` decorator. All data is row-level isolated by `organizationId`.
+O acesso é verificado por requisição via `RolesGuard` + decorator `@Roles()`. Todos os dados são isolados por `organizationId`.
 
-## Frontend pages
+## Páginas do frontend
 
-| Route | Description |
-|-------|-------------|
-| `/login` | Credentials login |
-| `/dashboard` | Metrics overview and SLA gauge |
-| `/tickets` | Ticket list with search, status, and priority filters |
-| `/tickets/new` | Create ticket form |
-| `/tickets/[id]` | Ticket detail with public and internal comments |
+| Rota | Descrição |
+|------|-----------|
+| `/login` | Login com credenciais |
+| `/dashboard` | Visão geral de métricas e gauge de SLA |
+| `/tickets` | Lista de tickets com filtros de busca, status e prioridade |
+| `/tickets/new` | Formulário de criação de ticket |
+| `/tickets/[id]` | Detalhe do ticket com comentários públicos e internos |
 
-## Docker deploy
+## Deploy com Docker
 
 ```bash
-# Fill .env with production values before building
-# NEXTAUTH_URL=https://yourdomain.com
-# NEXT_PUBLIC_API_URL=https://api.yourdomain.com
+# Preencher o .env com os valores de produção antes de buildar
+# NEXTAUTH_URL=https://seudominio.com
+# NEXT_PUBLIC_API_URL=https://api.seudominio.com
 
 docker compose up --build -d
 ```
 
-The API entrypoint runs `prisma migrate deploy` automatically on startup.
+O entrypoint da API executa `prisma migrate deploy` automaticamente na inicialização.
 
-## Security notes
+## Segurança
 
-- `JWT_SECRET`, `JWT_REFRESH_SECRET`, and `NEXTAUTH_SECRET` must be distinct values
-- Refresh tokens are stored in Redis and revocable on logout
-- Login endpoint is rate-limited to **5 requests / 60 s** per IP via `ThrottlerGuard`
-- `.env` is excluded from version control — never commit secrets
+- `JWT_SECRET`, `JWT_REFRESH_SECRET` e `NEXTAUTH_SECRET` devem ser valores distintos
+- Refresh tokens ficam armazenados no Redis e podem ser revogados no logout
+- O endpoint de login tem rate limit de **5 requisições / 60 s** por IP via `ThrottlerGuard`
+- `.env` está no `.gitignore` — nunca commite secrets
 
 ## Roadmap
 
-- [ ] File attachments on tickets (MIME validation + executable blocklist)
-- [ ] Projects page (`/projects`)
-- [ ] Users and invites page (`/users`)
-- [ ] Organization settings page (`/settings`)
-- [ ] Email and in-app notifications
-- [ ] GitHub Actions CI/CD pipeline
-- [ ] Coolify production deploy
+- [ ] Upload de anexos nos tickets (validação de MIME + bloqueio de executáveis)
+- [ ] Página de projetos (`/projects`)
+- [ ] Página de usuários e convites (`/users`)
+- [ ] Página de configurações da organização (`/settings`)
+- [ ] Notificações por e-mail e in-app
+- [ ] Pipeline de CI/CD com GitHub Actions
+- [ ] Deploy em produção no Coolify
