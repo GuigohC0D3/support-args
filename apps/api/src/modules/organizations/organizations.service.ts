@@ -68,10 +68,32 @@ export class OrganizationsService {
     });
   }
 
+  async listMembers(orgId: string, userId: string, isMasterAdmin: boolean) {
+    if (!isMasterAdmin) {
+      const member = await this.prisma.userOrganization.findUnique({
+        where: { userId_organizationId: { userId, organizationId: orgId } },
+      });
+      if (!member) throw new ForbiddenException();
+    }
+
+    return this.prisma.userOrganization.findMany({
+      where: { organizationId: orgId, acceptedAt: { not: null } },
+      include: {
+        user: { select: { id: true, name: true, email: true, avatarUrl: true, isActive: true, lastLoginAt: true } },
+      },
+      orderBy: { invitedAt: 'asc' },
+    });
+  }
+
   async removeUser(orgId: string, userId: string) {
     await this.prisma.userOrganization.deleteMany({
       where: { organizationId: orgId, userId },
     });
+  }
+
+  async deactivate(id: string) {
+    await this.findById(id);
+    await this.prisma.organization.update({ where: { id }, data: { isActive: false } });
   }
 
   async updateUserRole(orgId: string, userId: string, role: UserRole) {
