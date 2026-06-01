@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Plus, Search } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
+import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import api from '@/lib/api-client';
 import { useAuthStore } from '@/store/auth-store';
@@ -145,7 +145,7 @@ export default function TicketsPage() {
                   {ticket.project?.name}
                 </td>
                 <td className="px-4 py-3.5 text-muted-foreground text-xs font-mono hidden md:table-cell">
-                  {formatDistanceToNow(new Date(ticket.createdAt), { addSuffix: true, locale: ptBR })}
+                  {format(new Date(ticket.createdAt), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
                 </td>
               </tr>
             ))}

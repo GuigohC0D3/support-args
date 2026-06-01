@@ -6,7 +6,20 @@ import { useParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Send, Lock, Loader2 } from 'lucide-react';
+import { Send, Lock, Loader2, ArrowLeft } from 'lucide-react';
+import Link from 'next/link';
+
+const IMPACT_LABELS: Record<string, Record<string, string>> = {
+  blocked:   { yes: 'Consegue usar', partial: 'Parcialmente', no: 'Travado' },
+  frequency: { first_time: '1ª vez', sometimes: 'Às vezes', always: 'Sempre' },
+  scope:     { just_me: 'Só o usuário', my_team: 'A equipe', everyone: 'Toda a empresa' },
+  financial: { yes: 'Afeta pagamentos/clientes', no: 'Sem impacto financeiro' },
+  urgency:   { can_wait: 'Pode esperar', need_today: 'Precisa hoje', everything_stopped: 'Parou tudo' },
+};
+
+const IMPACT_ICONS: Record<string, string> = {
+  blocked: '🚧', frequency: '🔁', scope: '👥', financial: '💰', urgency: '⚡',
+};
 import api from '@/lib/api-client';
 import { TicketStatusBadge } from '@/components/tickets/ticket-status-badge';
 import { TicketPriorityBadge } from '@/components/tickets/ticket-priority-badge';
@@ -68,6 +81,13 @@ export default function TicketDetailPage() {
 
   return (
     <div className="max-w-3xl mx-auto space-y-5 animate-fade-in">
+      <Link
+        href="/tickets"
+        className="inline-flex items-center gap-1.5 text-xs font-mono font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors"
+      >
+        <ArrowLeft size={14} />
+        Tickets
+      </Link>
       {/* Header card */}
       <Card>
         <CardContent className="p-6 space-y-4">
@@ -97,6 +117,25 @@ export default function TicketDetailPage() {
           <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
             {ticket.description}
           </p>
+
+          {ticket.impactData && Object.keys(ticket.impactData).length > 0 && (
+            <div className="pt-4 border-t-2 border-border space-y-2">
+              <p className="text-xs font-black uppercase tracking-widest text-muted-foreground font-mono">
+                Impacto relatado
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {Object.entries(ticket.impactData as Record<string, string>).map(([key, val]) => (
+                  <span
+                    key={key}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 border-2 border-border text-xs font-semibold bg-muted/40"
+                  >
+                    <span>{IMPACT_ICONS[key]}</span>
+                    {IMPACT_LABELS[key]?.[val] ?? val}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="flex flex-wrap gap-x-5 gap-y-1 text-xs text-muted-foreground pt-4 border-t-2 border-border items-center font-mono">
             <span>

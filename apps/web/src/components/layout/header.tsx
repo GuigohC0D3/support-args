@@ -1,19 +1,26 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { signOut } from 'next-auth/react';
 import { useTheme } from 'next-themes';
 import { LogOut, ChevronsUpDown, Sun, Moon } from 'lucide-react';
+import { NotificationDropdown } from '@/components/notifications/notification-dropdown';
 import { useAuthStore } from '@/store/auth-store';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+  DialogDescription, DialogFooter, DialogClose,
+} from '@/components/ui/dialog';
 
 export function Header() {
   const { user, orgs, activeOrgId, setActiveOrg } = useAuthStore();
   const { theme, setTheme } = useTheme();
+  const [logoutOpen, setLogoutOpen] = useState(false);
   const activeOrg = orgs.find((o) => o.id === activeOrgId);
   const initials = user?.name?.split(' ').map((n) => n[0]).slice(0, 2).join('').toUpperCase() ?? '?';
 
   return (
+    <>
     <header className="h-14 border-b-2 border-border bg-card flex items-center justify-between px-5 shrink-0">
       {/* Org switcher */}
       {orgs.length > 1 ? (
@@ -49,6 +56,8 @@ export function Header() {
           <Moon size={14} className="absolute rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
         </Button>
 
+        <NotificationDropdown />
+
         <div className="w-px h-5 bg-border mx-1" />
 
         {/* Avatar + name */}
@@ -64,7 +73,7 @@ export function Header() {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => signOut({ callbackUrl: '/login' })}
+          onClick={() => setLogoutOpen(true)}
           className="text-muted-foreground hover:text-destructive ml-1"
           aria-label="Sair"
         >
@@ -72,5 +81,29 @@ export function Header() {
         </Button>
       </div>
     </header>
+
+    <Dialog open={logoutOpen} onOpenChange={setLogoutOpen}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Sair da conta</DialogTitle>
+          <DialogDescription>
+            Tem certeza que deseja encerrar sua sessão?
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button variant="ghost" size="sm">Cancelar</Button>
+          </DialogClose>
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={() => signOut({ callbackUrl: '/login' })}
+          >
+            Sair
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }

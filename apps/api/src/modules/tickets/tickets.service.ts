@@ -5,10 +5,16 @@ import { CreateTicketDto } from './dto/create-ticket.dto';
 import { UpdateTicketDto } from './dto/update-ticket.dto';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { ListTicketsDto } from './dto/list-tickets.dto';
+import { NotificationsService } from '../notifications/notifications.service';
+import { IntegrationsService } from '../integrations/integrations.service';
 
 @Injectable()
 export class TicketsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notifications: NotificationsService,
+    private integrations: IntegrationsService,
+  ) {}
 
   async findAll(dto: ListTicketsDto, userId: string, isMasterAdmin: boolean, userRole?: string) {
     const { organizationId, projectId, status, priority, assignedToId, search, page = 1, limit = 20 } = dto;
@@ -102,6 +108,8 @@ export class TicketsService {
         title: dto.title,
         description: dto.description,
         priority: dto.priority,
+        category: dto.category,
+        impactData: dto.impactData ?? null,
         createdById: userId,
       },
       include: {
@@ -118,6 +126,15 @@ export class TicketsService {
         newValue: JSON.stringify({ status: ticket.status, priority: ticket.priority }),
       },
     });
+
+    // Dispara notificação para agentes/admins da org (sem await para não bloquear resposta)
+    this.notifications.onTicketCreated({
+      id:             ticket.id,
+      number:         ticket.number,
+      title:          ticket.title,
+      organizationId: organizationId,
+      createdById:    userId,
+    }).catch(() => null);
 
     return ticket;
   }
@@ -171,6 +188,29 @@ export class TicketsService {
       });
     }
 
+    // Email ao cliente (ticket de integração) quando status muda
+    if (dto.status && dto.status !== ticket.status) {
+      this.integrations.notifyClientStatusChanged(id, dto.status).catch(() => null);
+    }
+
+    // Notificações de mudança de status
+    if (dto.status && dto.status !== ticket.status) {
+      this.notifications.onStatusChanged(
+        { id: ticket.id, number: ticket.number, title: ticket.title, createdById: ticket.createdById, organizationId: ticket.organizationId },
+        dto.status,
+        userId,
+      ).catch(() => null);
+    }
+
+    // Notificação de atribuição
+    if (dto.assignedToId && dto.assignedToId !== ticket.assignedToId) {
+      this.notifications.onTicketAssigned(
+        { id: ticket.id, number: ticket.number, title: ticket.title },
+        dto.assignedToId,
+        userId,
+      ).catch(() => null);
+    }
+
     return updated;
   }
 
@@ -204,6 +244,28 @@ export class TicketsService {
         newValue: JSON.stringify({ commentId: comment.id, type: comment.type }),
       },
     });
+
+    // Email ao cliente se foi um agente que respondeu
+    if (comment.type === CommentType.PUBLIC) {
+      this.integrations.notifyClientNewReply({
+        ticketId:  ticketId,
+        agentName: comment.user.name,
+        preview:   dto.body,
+      }).catch(() => null);
+    }
+
+    this.notifications.onNewComment(
+      {
+        id:             ticketId,
+        number:         ticket.number,
+        title:          ticket.title,
+        createdById:    ticket.createdById,
+        assignedToId:   ticket.assignedToId,
+        organizationId: ticket.organizationId,
+      },
+      userId,
+      comment.type === CommentType.INTERNAL,
+    ).catch(() => null);
 
     return comment;
   }
