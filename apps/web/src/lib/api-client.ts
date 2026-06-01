@@ -8,15 +8,25 @@ const api = axios.create({
 
 api.interceptors.request.use(async (config) => {
   const session = await getSession();
+
+  const sessionError = (session as any)?.error;
+
+  if (sessionError === 'SessionExpired' || sessionError === 'RefreshAccessTokenError') {
+    await signOut({ redirect: true, callbackUrl: '/login' });
+    return Promise.reject(new Error('Session expired'));
+  }
+
   if (session?.accessToken) {
     config.headers.Authorization = `Bearer ${session.accessToken}`;
   }
+
   return config;
 });
 
 api.interceptors.response.use(
   (res) => res,
   async (error: AxiosError) => {
+    // Último recurso: token adulterado, revogado manualmente no servidor, etc.
     if (error.response?.status === 401) {
       await signOut({ redirect: true, callbackUrl: '/login' });
     }
