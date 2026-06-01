@@ -79,6 +79,13 @@ export class ProjectsController {
     return this.service.addMember(orgId, projectId, dto.userId, dto.role);
   }
 
+  @Post(':projectId/regenerate-key')
+  @Roles(UserRole.ORG_ADMIN)
+  @ApiOperation({ summary: 'Regenerate project API key' })
+  regenerateKey(@Param('orgId') orgId: string, @Param('projectId') projectId: string) {
+    return this.service.regenerateApiKey(orgId, projectId);
+  }
+
   @Delete(':projectId/members/:userId')
   @Roles(UserRole.ORG_ADMIN)
   @HttpCode(HttpStatus.NO_CONTENT)

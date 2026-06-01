@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, ForbiddenException, ConflictException } 
 import { UserRole } from '@support-hub/database';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateProjectDto } from './dto/create-project.dto';
+import { IntegrationsService } from '../integrations/integrations.service';
 
 @Injectable()
 export class ProjectsService {
@@ -46,7 +47,16 @@ export class ProjectsService {
 
   async create(orgId: string, dto: CreateProjectDto) {
     return this.prisma.project.create({
-      data: { ...dto, organizationId: orgId },
+      data: { ...dto, organizationId: orgId, apiKey: IntegrationsService.generateApiKey() },
+    });
+  }
+
+  async regenerateApiKey(orgId: string, projectId: string) {
+    await this.findById(orgId, projectId);
+    return this.prisma.project.update({
+      where: { id: projectId },
+      data:  { apiKey: IntegrationsService.generateApiKey() },
+      select: { id: true, apiKey: true },
     });
   }
 
