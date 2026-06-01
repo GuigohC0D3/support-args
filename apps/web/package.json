@@ -3,8 +3,8 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "dev": "dotenv -e ../../.env -- next dev -p 3000",
-    "build": "dotenv -e ../../.env -- next build",
+    "dev": "bun --env-file ../../.env next dev -p 3000",
+    "build": "bun --env-file ../../.env next build",
     "start": "next start",
     "lint": "next lint"
   },
@@ -45,7 +45,6 @@
     "postcss": "^8.4.38",
     "autoprefixer": "^10.4.19",
     "eslint": "^8.57.0",
-    "eslint-config-next": "14.2.3",
-    "dotenv-cli": "^7.4.2"
+    "eslint-config-next": "14.2.3"
   }
 }

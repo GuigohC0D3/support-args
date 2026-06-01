@@ -28,9 +28,20 @@ export class RolesGuard implements CanActivate {
 
     if (user.isMasterAdmin) return true;
 
-    const userLevel = ROLE_HIERARCHY[user.role as UserRole] ?? 0;
     const minRequired = Math.min(...requiredRoles.map((r) => ROLE_HIERARCHY[r]));
 
+    if (minRequired >= ROLE_HIERARCHY.MASTER_ADMIN) {
+      throw new ForbiddenException('Insufficient permissions');
+    }
+
+    const { params } = context.switchToHttp().getRequest();
+    const orgId = params.orgId;
+
+    const membership = (user.organizations as Array<{ organizationId: string; role: UserRole; acceptedAt: Date | null }>)?.find(
+      (o) => o.organizationId === orgId && o.acceptedAt !== null,
+    );
+
+    const userLevel = ROLE_HIERARCHY[membership?.role as UserRole] ?? 0;
     if (userLevel < minRequired) throw new ForbiddenException('Insufficient permissions');
 
     return true;

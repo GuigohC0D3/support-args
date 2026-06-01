@@ -9,6 +9,9 @@ import { OrganizationsModule } from './modules/organizations/organizations.modul
 import { ProjectsModule } from './modules/projects/projects.module';
 import { TicketsModule } from './modules/tickets/tickets.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
+import { IntegrationsModule } from './modules/integrations/integrations.module';
+import { MailModule } from './modules/mail/mail.module';
 import { HealthController } from './modules/health/health.controller';
 
 @Module({
@@ -22,6 +25,9 @@ import { HealthController } from './modules/health/health.controller';
     ProjectsModule,
     TicketsModule,
     DashboardModule,
+    NotificationsModule,
+    IntegrationsModule,
+    MailModule,
   ],
   controllers: [HealthController],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],

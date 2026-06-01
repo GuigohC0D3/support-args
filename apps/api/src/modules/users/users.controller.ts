@@ -1,11 +1,11 @@
-import { Controller, Get, Post, Body, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Body, Param, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { UserRole } from '@support-hub/database';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import { UsersService, CreateUserDto } from './users.service';
+import { UsersService, CreateUserDto, UpdateProfileDto } from './users.service';
 import { Public } from '../../common/decorators/public.decorator';
 
 @ApiTags('Users')
@@ -18,6 +18,11 @@ export class UsersController {
   @Get('me')
   me(@CurrentUser() user: any) {
     return this.service.findMe(user.id);
+  }
+
+  @Patch('me')
+  updateMe(@CurrentUser() user: any, @Body() dto: UpdateProfileDto) {
+    return this.service.updateMe(user.id, dto);
   }
 
   @Public()

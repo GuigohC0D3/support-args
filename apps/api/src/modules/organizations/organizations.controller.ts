@@ -68,10 +68,24 @@ export class OrganizationsController {
     return this.service.updateUserRole(orgId, userId, dto.role);
   }
 
+  @Get(':orgId/users')
+  @ApiOperation({ summary: 'List organization members' })
+  listMembers(@Param('orgId') orgId: string, @CurrentUser() user: any) {
+    return this.service.listMembers(orgId, user.id, user.isMasterAdmin);
+  }
+
   @Delete(':orgId/users/:userId')
   @Roles(UserRole.ORG_ADMIN)
   @HttpCode(HttpStatus.NO_CONTENT)
   removeUser(@Param('orgId') orgId: string, @Param('userId') userId: string) {
     return this.service.removeUser(orgId, userId);
+  }
+
+  @Delete(':orgId')
+  @Roles(UserRole.MASTER_ADMIN)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Deactivate organization (master admin)' })
+  deactivate(@Param('orgId') orgId: string) {
+    return this.service.deactivate(orgId);
   }
 }
