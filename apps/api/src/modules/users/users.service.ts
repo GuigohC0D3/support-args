@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
-import { IsString, IsEmail, MinLength } from 'class-validator';
+import { IsString, IsEmail, MinLength, IsOptional, IsUrl } from 'class-validator';
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../../prisma/prisma.service';
 
@@ -7,6 +7,11 @@ export class CreateUserDto {
   @IsEmail() email: string;
   @IsString() @MinLength(2) name: string;
   @IsString() @MinLength(8) password: string;
+}
+
+export class UpdateProfileDto {
+  @IsOptional() @IsString() @MinLength(2) name?: string;
+  @IsOptional() @IsUrl() avatarUrl?: string;
 }
 
 @Injectable()
@@ -54,5 +59,13 @@ export class UsersService {
     });
     if (!user) throw new NotFoundException();
     return user;
+  }
+
+  async updateMe(userId: string, dto: UpdateProfileDto) {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: { ...dto },
+      select: { id: true, email: true, name: true, avatarUrl: true },
+    });
   }
 }
