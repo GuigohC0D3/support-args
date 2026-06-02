@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { HistoryAction, TicketStatus, UserRole, CommentType } from '@support-hub/database';
+import { Prisma, HistoryAction, TicketStatus, UserRole, CommentType } from '@support-hub/database';
 import { CreateTicketDto } from './dto/create-ticket.dto';
 import { UpdateTicketDto } from './dto/update-ticket.dto';
 import { CreateCommentDto } from './dto/create-comment.dto';
@@ -109,7 +109,7 @@ export class TicketsService {
         description: dto.description,
         priority: dto.priority,
         category: dto.category,
-        impactData: dto.impactData ?? null,
+        impactData: dto.impactData ?? Prisma.JsonNull,
         createdById: userId,
       },
       include: {
@@ -169,7 +169,7 @@ export class TicketsService {
       if (dto.status === TicketStatus.CLOSED) data.closedAt = new Date();
 
       if (dto.status === TicketStatus.IN_PROGRESS && !ticket.assignedToId && !('assignedToId' in dto)) {
-        const canBeAssigned = isMasterAdmin || [UserRole.SUPPORT_AGENT, UserRole.ORG_ADMIN].includes(userRole as UserRole);
+        const canBeAssigned = isMasterAdmin || (([UserRole.SUPPORT_AGENT, UserRole.ORG_ADMIN] as UserRole[]).includes(userRole as UserRole));
         if (canBeAssigned) {
           historyEntries.push({ action: HistoryAction.ASSIGNED, newValue: userId });
           data.assignedToId = userId;

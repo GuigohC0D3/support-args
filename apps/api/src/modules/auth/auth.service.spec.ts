@@ -1,6 +1,7 @@
 import { Test } from '@nestjs/testing';
 import { UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcryptjs';
 import { AuthService } from './auth.service';
 import { RedisService } from './redis.service';
@@ -56,12 +57,9 @@ describe('AuthService', () => {
         { provide: PrismaService, useValue: mockPrisma },
         { provide: RedisService, useValue: mockRedis },
         { provide: JwtService, useValue: mockJwt },
-        { provide: 'ConfigService', useValue: mockConfig },
+        { provide: ConfigService, useValue: mockConfig },
       ],
-    })
-      .overrideProvider('ConfigService')
-      .useValue(mockConfig)
-      .compile();
+    }).compile();
 
     service = module.get<AuthService>(AuthService);
     jest.clearAllMocks();
