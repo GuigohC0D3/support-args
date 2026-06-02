@@ -6,8 +6,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
-import { useState } from 'react';
-import { AlertTriangle, HelpCircle, CreditCard, KeyRound, Lightbulb } from 'lucide-react';
+import { useState, useRef, useCallback } from 'react';
+import { AlertTriangle, HelpCircle, CreditCard, KeyRound, Lightbulb, Paperclip, X, FileVideo, ImageIcon } from 'lucide-react';
 import api from '@/lib/api-client';
 import { useAuthStore } from '@/store/auth-store';
 import { Button } from '@/components/ui/button';
@@ -129,10 +129,24 @@ export default function NewTicketPage() {
   const isClient = activeOrg?.role === 'CLIENT';
 
   const [impact, setImpact] = useState<ImpactData>({});
+  const [files, setFiles] = useState<File[]>([]);
+  const [dragging, setDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const setImpactField = (key: keyof ImpactData, val: string | undefined) => {
     setImpact((prev) => ({ ...prev, [key]: val }));
   };
+
+  const addFiles = useCallback((incoming: FileList | null) => {
+    if (!incoming) return;
+    const valid = Array.from(incoming).filter(
+      (f) => f.type.startsWith('image/') || f.type.startsWith('video/')
+    );
+    setFiles((prev) => {
+      const existing = new Set(prev.map((f) => f.name + f.size));
+      return [...prev, ...valid.filter((f) => !existing.has(f.name + f.size))];
+    });
+  }, []);
 
   const { data: projects } = useQuery({
     queryKey: ['projects', activeOrgId],
@@ -148,13 +162,24 @@ export default function NewTicketPage() {
   const selectedCategory = watch('category');
 
   const create = useMutation({
-    mutationFn: (data: FormData) =>
-      api.post('/tickets', {
+    mutationFn: async (data: FormData) => {
+      const res = await api.post('/tickets', {
         ...data,
         priority: isClient ? 'MEDIUM' : (data.priority ?? 'MEDIUM'),
         organizationId: activeOrgId,
         impactData: Object.keys(impact).length > 0 ? impact : undefined,
-      }),
+      });
+      if (files.length > 0) {
+        const form = new window.FormData();
+        files.forEach((f) => form.append('files', f));
+        await api.post(`/tickets/${res.data.id}/attachments`, form, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        }).catch(() => {
+          toast.warning('Ticket criado, mas falha ao enviar os anexos. Tente novamente no detalhe do chamado.');
+        });
+      }
+      return res;
+    },
     onSuccess: (res) => {
       toast.success('Ticket criado com sucesso');
       router.push(`/tickets/${res.data.id}`);
@@ -274,6 +299,67 @@ export default function NewTicketPage() {
               />
             </div>
           ))}
+        </CardContent>
+      </Card>
+
+      {/* Anexos */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Paperclip size={15} />
+            Anexos
+            <span className="text-muted-foreground font-normal text-sm">(opcional)</span>
+          </CardTitle>
+          <p className="text-xs text-muted-foreground">Imagens ou vídeos que ajudem a identificar o problema.</p>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div
+            onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+            onDragLeave={() => setDragging(false)}
+            onDrop={(e) => { e.preventDefault(); setDragging(false); addFiles(e.dataTransfer.files); }}
+            onClick={() => fileInputRef.current?.click()}
+            className={`border-2 border-dashed rounded-none p-6 text-center cursor-pointer transition-colors
+              ${dragging ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50 hover:bg-muted/30'}`}
+          >
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept="image/*,video/*"
+              className="hidden"
+              onChange={(e) => addFiles(e.target.files)}
+            />
+            <Paperclip size={20} className="mx-auto mb-2 text-muted-foreground" />
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+              Clique ou arraste arquivos aqui
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">Imagens e vídeos · máx 50MB por arquivo</p>
+          </div>
+
+          {files.length > 0 && (
+            <div className="space-y-2">
+              {files.map((f, i) => (
+                <div key={i} className="flex items-center gap-3 px-3 py-2 border-2 border-border bg-muted/20">
+                  {f.type.startsWith('video/') ? (
+                    <FileVideo size={14} className="text-muted-foreground shrink-0" />
+                  ) : (
+                    <ImageIcon size={14} className="text-muted-foreground shrink-0" />
+                  )}
+                  <span className="text-xs font-mono flex-1 truncate">{f.name}</span>
+                  <span className="text-xs text-muted-foreground font-mono shrink-0">
+                    {(f.size / 1024 / 1024).toFixed(1)}MB
+                  </span>
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setFiles((prev) => prev.filter((_, j) => j !== i)); }}
+                    className="text-muted-foreground hover:text-destructive transition-colors shrink-0"
+                  >
+                    <X size={13} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 

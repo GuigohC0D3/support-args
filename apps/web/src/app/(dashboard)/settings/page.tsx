@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Save, Building2, User } from 'lucide-react';
+import { Save, Building2, User, Camera } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '@/lib/api-client';
 import { useAuthStore } from '@/store/auth-store';
@@ -38,10 +38,10 @@ export default function SettingsPage() {
   const saveOrg = useMutation({
     mutationFn: () => api.patch(`/organizations/${activeOrgId}`, orgForm),
     onSuccess: (res) => {
-      qc.invalidateQueries({ queryKey: ['org', activeOrgId] });
-      // Atualiza o nome no store
-      const updatedOrgs = orgs.map((o) => o.id === activeOrgId ? { ...o, name: res.data.name, slug: res.data.slug } : o);
-      setProfile(user!, updatedOrgs);
+      const { user: u, orgs: o, activeOrgId: aid, setProfile: sp } = useAuthStore.getState();
+      qc.invalidateQueries({ queryKey: ['org', aid] });
+      const updatedOrgs = o.map((org) => org.id === aid ? { ...org, name: res.data.name, slug: res.data.slug } : org);
+      sp(u!, updatedOrgs);
       toast.success('Organização atualizada');
     },
     onError: () => toast.error('Erro ao atualizar organização'),
@@ -49,10 +49,34 @@ export default function SettingsPage() {
 
   // ─── Profile form ────────────────────────────────────────────────────────────
   const [profileForm, setProfileForm] = useState({ name: '', avatarUrl: '' });
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (user) setProfileForm({ name: user.name, avatarUrl: user.avatarUrl ?? '' });
   }, [user]);
+
+  const uploadAvatar = useMutation({
+    mutationFn: (file: File) => {
+      const form = new FormData();
+      form.append('file', file);
+      return api.post('/users/me/avatar', form, { headers: { 'Content-Type': 'multipart/form-data' } });
+    },
+    onSuccess: (res) => {
+      setProfileForm((f) => ({ ...f, avatarUrl: res.data.avatarUrl }));
+      const { user: u, orgs: o, setProfile: sp } = useAuthStore.getState();
+      sp({ ...u!, avatarUrl: res.data.avatarUrl }, o);
+      toast.success('Avatar atualizado');
+    },
+    onError: () => toast.error('Erro ao enviar imagem'),
+  });
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setAvatarPreview(URL.createObjectURL(file));
+    uploadAvatar.mutate(file);
+  }
 
   const saveProfile = useMutation({
     mutationFn: () => api.patch('/users/me', {
@@ -60,7 +84,8 @@ export default function SettingsPage() {
       avatarUrl: profileForm.avatarUrl || undefined,
     }),
     onSuccess: (res) => {
-      setProfile({ ...user!, name: res.data.name, avatarUrl: res.data.avatarUrl }, orgs);
+      const { user: u, orgs: o, setProfile: sp } = useAuthStore.getState();
+      sp({ ...u!, name: res.data.name, avatarUrl: res.data.avatarUrl }, o);
       toast.success('Perfil atualizado');
     },
     onError: () => toast.error('Erro ao atualizar perfil'),
@@ -158,13 +183,50 @@ export default function SettingsPage() {
               <p className="text-xs text-muted-foreground">O e-mail não pode ser alterado.</p>
             </div>
             <div className="space-y-1.5">
-              <Label>URL do avatar</Label>
-              <Input
-                value={profileForm.avatarUrl}
-                onChange={(e) => setProfileForm({ ...profileForm, avatarUrl: e.target.value })}
-                placeholder="https://..."
-                className="font-mono"
-              />
+              <Label>Avatar</Label>
+              <div className="flex items-center gap-4">
+                <div className="relative w-16 h-16 shrink-0">
+                  {(avatarPreview || profileForm.avatarUrl) ? (
+                    <img
+                      src={avatarPreview ?? `${process.env.NEXT_PUBLIC_API_URL}${profileForm.avatarUrl}`}
+                      alt="avatar"
+                      className="w-16 h-16 rounded-full object-cover border-2 border-border"
+                    />
+                  ) : (
+                    <div className="w-16 h-16 rounded-full border-2 border-border bg-muted flex items-center justify-center">
+                      <span className="text-xl font-black text-muted-foreground">
+                        {user?.name?.charAt(0).toUpperCase() ?? '?'}
+                      </span>
+                    </div>
+                  )}
+                  {uploadAvatar.isPending && (
+                    <div className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center">
+                      <span className="text-white text-xs">...</span>
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleFileChange}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploadAvatar.isPending}
+                  >
+                    <Camera size={13} />
+                    Trocar foto
+                  </Button>
+                  <p className="text-xs text-muted-foreground mt-1.5">JPG, PNG ou GIF · máx 2MB</p>
+                </div>
+              </div>
             </div>
 
             {profileForm.avatarUrl && (

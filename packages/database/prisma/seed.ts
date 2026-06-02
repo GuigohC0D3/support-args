@@ -20,11 +20,11 @@ async function main() {
   });
 
   const org = await prisma.organization.upsert({
-    where: { slug: 'acme' },
+    where: { slug: 'args' },
     update: {},
     create: {
-      name: 'Acme Corp',
-      slug: 'acme',
+      name: 'ARGs',
+      slug: 'args',
     },
   });
 

@@ -139,9 +139,19 @@ export class TicketsService {
     return ticket;
   }
 
-  async update(id: string, dto: UpdateTicketDto, userId: string) {
+  async update(id: string, dto: UpdateTicketDto, userId: string, isMasterAdmin = false) {
     const ticket = await this.prisma.ticket.findUnique({ where: { id } });
     if (!ticket) throw new NotFoundException('Ticket not found');
+
+    let userRole: string | null = null;
+    if (!isMasterAdmin) {
+      const membership = await this.prisma.userOrganization.findUnique({
+        where: { userId_organizationId: { userId, organizationId: ticket.organizationId } },
+        select: { role: true },
+      });
+      if (!membership) throw new ForbiddenException();
+      userRole = membership.role;
+    }
 
     const historyEntries: { action: HistoryAction; oldValue?: string; newValue?: string }[] = [];
 
@@ -157,6 +167,14 @@ export class TicketsService {
 
       if (dto.status === TicketStatus.RESOLVED) data.resolvedAt = new Date();
       if (dto.status === TicketStatus.CLOSED) data.closedAt = new Date();
+
+      if (dto.status === TicketStatus.IN_PROGRESS && !ticket.assignedToId && !('assignedToId' in dto)) {
+        const canBeAssigned = isMasterAdmin || [UserRole.SUPPORT_AGENT, UserRole.ORG_ADMIN].includes(userRole as UserRole);
+        if (canBeAssigned) {
+          historyEntries.push({ action: HistoryAction.ASSIGNED, newValue: userId });
+          data.assignedToId = userId;
+        }
+      }
     }
 
     if (dto.priority && dto.priority !== ticket.priority) {
@@ -270,7 +288,40 @@ export class TicketsService {
     return comment;
   }
 
-  async getHistory(ticketId: string) {
+  async addAttachments(ticketId: string, files: Express.Multer.File[], userId: string, isMasterAdmin = false) {
+    const ticket = await this.prisma.ticket.findUnique({ where: { id: ticketId } });
+    if (!ticket) throw new NotFoundException('Ticket not found');
+
+    if (!isMasterAdmin) {
+      const membership = await this.prisma.userOrganization.findUnique({
+        where: { userId_organizationId: { userId, organizationId: ticket.organizationId } },
+      });
+      if (!membership) throw new ForbiddenException();
+    }
+
+    return this.prisma.ticketAttachment.createMany({
+      data: files.map((f) => ({
+        ticketId,
+        uploadedById: userId,
+        fileName: f.originalname,
+        fileSize: f.size,
+        mimeType: f.mimetype,
+        storageKey: `/uploads/attachments/${ticketId}/${f.filename}`,
+      })),
+    });
+  }
+
+  async getHistory(ticketId: string, userId: string, isMasterAdmin = false) {
+    const ticket = await this.prisma.ticket.findUnique({ where: { id: ticketId }, select: { organizationId: true } });
+    if (!ticket) throw new NotFoundException('Ticket not found');
+
+    if (!isMasterAdmin) {
+      const membership = await this.prisma.userOrganization.findUnique({
+        where: { userId_organizationId: { userId, organizationId: ticket.organizationId } },
+      });
+      if (!membership) throw new ForbiddenException();
+    }
+
     return this.prisma.ticketHistory.findMany({
       where: { ticketId },
       include: { user: { select: { id: true, name: true, avatarUrl: true } } },

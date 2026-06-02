@@ -62,8 +62,16 @@ export function Header() {
 
         {/* Avatar + name */}
         <div className="flex items-center gap-2.5 pl-1">
-          <div className="w-7 h-7 border-2 border-primary flex items-center justify-center shrink-0 bg-primary/10">
-            <span className="text-xs font-black text-primary font-mono">{initials}</span>
+          <div className="w-7 h-7 border-2 border-primary shrink-0 overflow-hidden bg-primary/10 flex items-center justify-center">
+            {user?.avatarUrl ? (
+              <img
+                src={`${process.env.NEXT_PUBLIC_API_URL}${user.avatarUrl}`}
+                alt={user.name}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <span className="text-xs font-black text-primary font-mono">{initials}</span>
+            )}
           </div>
           <span className="text-xs font-semibold uppercase tracking-wide hidden sm:block">
             {user?.name}
