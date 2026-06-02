@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
-import { IsString, IsEmail, MinLength, IsOptional, IsUrl } from 'class-validator';
+import { IsString, IsEmail, MinLength, IsOptional } from 'class-validator';
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../../prisma/prisma.service';
 
@@ -11,7 +11,7 @@ export class CreateUserDto {
 
 export class UpdateProfileDto {
   @IsOptional() @IsString() @MinLength(2) name?: string;
-  @IsOptional() @IsUrl() avatarUrl?: string;
+  @IsOptional() @IsString() avatarUrl?: string;
 }
 
 @Injectable()
