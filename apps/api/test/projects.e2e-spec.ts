@@ -164,7 +164,7 @@ describe('Projects (e2e)', () => {
       return request(app.getHttpServer())
         .delete(`/organizations/${organizationId}/projects/${createdProjectId}`)
         .set('Authorization', `Bearer ${masterToken}`)
-        .expect(200);
+        .expect(204);
     });
 
     it('returns 404 after deletion', () => {

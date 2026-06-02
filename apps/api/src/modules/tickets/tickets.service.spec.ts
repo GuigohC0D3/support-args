@@ -42,6 +42,9 @@ const mockPrisma = {
   ticketComment: {
     create: jest.fn(),
   },
+  userOrganization: {
+    findUnique: jest.fn().mockResolvedValue({ role: 'SUPPORT_AGENT' }),
+  },
 };
 
 describe('TicketsService', () => {
@@ -184,6 +187,7 @@ describe('TicketsService', () => {
         body: 'Estamos investigando',
         type: CommentType.PUBLIC,
         createdAt: new Date(),
+        user: { id: 'user-1', name: 'Test User', email: 'test@test.com' },
       });
       mockPrisma.ticket.update.mockResolvedValue({});
       mockPrisma.ticketHistory.create.mockResolvedValue({});
@@ -213,6 +217,7 @@ describe('TicketsService', () => {
         body: 'Segunda resposta',
         type: CommentType.PUBLIC,
         createdAt: new Date(),
+        user: { id: 'user-1', name: 'Test User', email: 'test@test.com' },
       });
       mockPrisma.ticketHistory.create.mockResolvedValue({});
 
