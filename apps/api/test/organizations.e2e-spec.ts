@@ -8,7 +8,6 @@ describe('Organizations (e2e)', () => {
   let masterToken: string;
   let agentToken: string;
   let organizationId: string;
-  let createdOrgId: string;
 
   beforeAll(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -98,7 +97,6 @@ describe('Organizations (e2e)', () => {
       expect(res.body).toHaveProperty('id');
       expect(res.body.name).toBe('E2E Test Org');
       expect(res.body.slug).toBe('e2e-test-org');
-      createdOrgId = res.body.id;
     });
 
     it('returns 409 for duplicate slug', () => {

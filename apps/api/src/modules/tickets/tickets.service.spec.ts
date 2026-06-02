@@ -55,8 +55,22 @@ describe('TicketsService', () => {
       providers: [
         TicketsService,
         { provide: PrismaService, useValue: mockPrisma },
-        { provide: NotificationsService, useValue: { onTicketCreated: jest.fn().mockResolvedValue(undefined) } },
-        { provide: IntegrationsService, useValue: {} },
+        {
+          provide: NotificationsService,
+          useValue: {
+            onTicketCreated: jest.fn().mockResolvedValue(undefined),
+            onStatusChanged: jest.fn().mockResolvedValue(undefined),
+            onTicketAssigned: jest.fn().mockResolvedValue(undefined),
+            onNewComment: jest.fn().mockResolvedValue(undefined),
+          },
+        },
+        {
+          provide: IntegrationsService,
+          useValue: {
+            notifyClientStatusChanged: jest.fn().mockResolvedValue(undefined),
+            notifyClientNewReply: jest.fn().mockResolvedValue(undefined),
+          },
+        },
       ],
     }).compile();
 
