@@ -1,0 +1,24 @@
+name: Deploy
+
+on:
+  push:
+    branches: [master]
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to Production (Coolify)
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Trigger Coolify deployment
+        run: |
+          curl -fsSL -X GET "${{ secrets.COOLIFY_WEBHOOK_URL }}" \
+            -H "Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}"
+
+      - name: Deployment triggered
+        run: echo "Deployment triggered for commit ${{ github.sha }} by ${{ github.actor }}"
