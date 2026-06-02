@@ -136,7 +136,16 @@ export default function TicketsPage() {
                     {ticket.title}
                   </Link>
                   {ticket.assignedTo && (
-                    <p className="text-xs text-muted-foreground mt-0.5 font-mono">{ticket.assignedTo.name}</p>
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <div className="w-4 h-4 rounded-full border border-border shrink-0 overflow-hidden bg-muted flex items-center justify-center">
+                        {ticket.assignedTo.avatarUrl ? (
+                          <img src={`${process.env.NEXT_PUBLIC_API_URL}${ticket.assignedTo.avatarUrl}`} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-[8px] font-black text-muted-foreground">{ticket.assignedTo.name?.charAt(0).toUpperCase()}</span>
+                        )}
+                      </div>
+                      <span className="text-xs text-muted-foreground font-mono">{ticket.assignedTo.name}</span>
+                    </div>
                   )}
                 </td>
                 <td className="px-4 py-3.5"><TicketStatusBadge status={ticket.status} /></td>
