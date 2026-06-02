@@ -44,7 +44,7 @@ describe('Auth (e2e)', () => {
     it('retorna 401 para credenciais inválidas', () => {
       return request(app.getHttpServer())
         .post('/auth/login')
-        .send({ email: 'naoexiste@test.com', password: 'wrong' })
+        .send({ email: 'naoexiste@test.com', password: 'wrongpassword' })
         .expect(401);
     });
 
