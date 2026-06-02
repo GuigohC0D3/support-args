@@ -3,6 +3,8 @@ import { NotFoundException } from '@nestjs/common';
 import { TicketStatus, TicketPriority, CommentType, HistoryAction } from '@support-hub/database';
 import { TicketsService } from './tickets.service';
 import { PrismaService } from '../../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { IntegrationsService } from '../integrations/integrations.service';
 
 const mockTicket = {
   id: 'ticket-1',
@@ -50,6 +52,8 @@ describe('TicketsService', () => {
       providers: [
         TicketsService,
         { provide: PrismaService, useValue: mockPrisma },
+        { provide: NotificationsService, useValue: { onTicketCreated: jest.fn().mockResolvedValue(undefined) } },
+        { provide: IntegrationsService, useValue: {} },
       ],
     }).compile();
 
