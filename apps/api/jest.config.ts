@@ -9,7 +9,7 @@ const config: Config = {
   coverageDirectory: '../coverage',
   testEnvironment: 'node',
   moduleNameMapper: {
-    '^@support-hub/database$': '<rootDir>/../../packages/database/src',
+    '^@support-hub/database$': '<rootDir>/../../../packages/database/src',
   },
 };
 
