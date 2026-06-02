@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
-import * as request from 'supertest';
+import request from 'supertest';
 import { AppModule } from '../src/app.module';
 
 describe('Tickets (e2e)', () => {
@@ -83,7 +83,7 @@ describe('Tickets (e2e)', () => {
         .get(`/tickets?organizationId=${organizationId}`)
         .set('Authorization', `Bearer ${accessToken}`)
         .expect(200)
-        .expect((res) => {
+        .expect((res: any) => {
           expect(res.body).toHaveProperty('data');
           expect(res.body).toHaveProperty('total');
           expect(Array.isArray(res.body.data)).toBe(true);
@@ -95,7 +95,7 @@ describe('Tickets (e2e)', () => {
         .get(`/tickets?organizationId=${organizationId}&status=OPEN`)
         .set('Authorization', `Bearer ${accessToken}`)
         .expect(200)
-        .expect((res) => {
+        .expect((res: any) => {
           res.body.data.forEach((t: any) => {
             expect(t.status).toBe('OPEN');
           });
@@ -113,7 +113,7 @@ describe('Tickets (e2e)', () => {
         .get(`/tickets/${ticketId}`)
         .set('Authorization', `Bearer ${accessToken}`)
         .expect(200)
-        .expect((res) => {
+        .expect((res: any) => {
           expect(res.body.id).toBe(ticketId);
           expect(res.body).toHaveProperty('comments');
           expect(res.body).toHaveProperty('history');
@@ -136,7 +136,7 @@ describe('Tickets (e2e)', () => {
         .set('Authorization', `Bearer ${accessToken}`)
         .send({ status: 'IN_PROGRESS' })
         .expect(200)
-        .expect((res) => {
+        .expect((res: any) => {
           expect(res.body.status).toBe('IN_PROGRESS');
         });
     });
@@ -149,7 +149,7 @@ describe('Tickets (e2e)', () => {
         .set('Authorization', `Bearer ${accessToken}`)
         .send({ body: 'Estamos investigando o problema.', type: 'PUBLIC' })
         .expect(201)
-        .expect((res) => {
+        .expect((res: any) => {
           expect(res.body.body).toBe('Estamos investigando o problema.');
           expect(res.body.type).toBe('PUBLIC');
         });
@@ -161,7 +161,7 @@ describe('Tickets (e2e)', () => {
         .set('Authorization', `Bearer ${accessToken}`)
         .send({ body: 'Nota interna da equipe.', type: 'INTERNAL' })
         .expect(201)
-        .expect((res) => {
+        .expect((res: any) => {
           expect(res.body.type).toBe('INTERNAL');
         });
     });
@@ -173,7 +173,7 @@ describe('Tickets (e2e)', () => {
         .get(`/tickets/${ticketId}/history`)
         .set('Authorization', `Bearer ${accessToken}`)
         .expect(200)
-        .expect((res) => {
+        .expect((res: any) => {
           expect(Array.isArray(res.body)).toBe(true);
           const actions = res.body.map((h: any) => h.action);
           expect(actions).toContain('CREATED');

@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
-import * as request from 'supertest';
+import request from 'supertest';
 import { AppModule } from '../src/app.module';
 
 describe('Projects (e2e)', () => {
@@ -50,7 +50,7 @@ describe('Projects (e2e)', () => {
         .get(`/organizations/${organizationId}/projects`)
         .set('Authorization', `Bearer ${masterToken}`)
         .expect(200)
-        .expect((res) => {
+        .expect((res: any) => {
           expect(Array.isArray(res.body)).toBe(true);
           expect(res.body.length).toBeGreaterThan(0);
           expect(res.body[0]).toHaveProperty('id');
@@ -113,7 +113,7 @@ describe('Projects (e2e)', () => {
         .get(`/organizations/${organizationId}/projects/${createdProjectId}`)
         .set('Authorization', `Bearer ${masterToken}`)
         .expect(200)
-        .expect((res) => {
+        .expect((res: any) => {
           expect(res.body.id).toBe(createdProjectId);
           expect(res.body).toHaveProperty('slaPolicy');
         });
@@ -136,7 +136,7 @@ describe('Projects (e2e)', () => {
         .set('Authorization', `Bearer ${masterToken}`)
         .send({ name: 'Updated E2E Project', color: '#ff5500' })
         .expect(200)
-        .expect((res) => {
+        .expect((res: any) => {
           expect(res.body.name).toBe('Updated E2E Project');
         });
     });

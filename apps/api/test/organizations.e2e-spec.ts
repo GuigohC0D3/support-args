@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
-import * as request from 'supertest';
+import request from 'supertest';
 import { AppModule } from '../src/app.module';
 
 describe('Organizations (e2e)', () => {
@@ -49,7 +49,7 @@ describe('Organizations (e2e)', () => {
         .get('/organizations')
         .set('Authorization', `Bearer ${masterToken}`)
         .expect(200)
-        .expect((res) => {
+        .expect((res: any) => {
           expect(Array.isArray(res.body)).toBe(true);
           expect(res.body.length).toBeGreaterThan(0);
         });
@@ -77,7 +77,7 @@ describe('Organizations (e2e)', () => {
         .get(`/organizations/${organizationId}`)
         .set('Authorization', `Bearer ${masterToken}`)
         .expect(200)
-        .expect((res) => {
+        .expect((res: any) => {
           expect(res.body).toHaveProperty('id', organizationId);
           expect(res.body).toHaveProperty('name');
           expect(res.body).toHaveProperty('slug');
@@ -135,7 +135,7 @@ describe('Organizations (e2e)', () => {
         .set('Authorization', `Bearer ${masterToken}`)
         .send({ name: 'Updated Org Name' })
         .expect(200)
-        .expect((res) => {
+        .expect((res: any) => {
           expect(res.body.name).toBe('Updated Org Name');
         });
     });
@@ -185,7 +185,7 @@ describe('Organizations (e2e)', () => {
         .get(`/organizations/${organizationId}/users`)
         .set('Authorization', `Bearer ${masterToken}`)
         .expect(200)
-        .expect((res) => {
+        .expect((res: any) => {
           expect(Array.isArray(res.body)).toBe(true);
           expect(res.body.length).toBeGreaterThan(0);
           expect(res.body[0]).toHaveProperty('role');

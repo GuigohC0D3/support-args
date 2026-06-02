@@ -109,7 +109,7 @@ export class TicketsService {
         description: dto.description,
         priority: dto.priority,
         category: dto.category,
-        impactData: dto.impactData ?? Prisma.JsonNull,
+        impactData: (dto.impactData as unknown as Prisma.InputJsonValue) ?? Prisma.JsonNull,
         createdById: userId,
       },
       include: {
