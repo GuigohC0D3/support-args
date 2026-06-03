@@ -16,9 +16,16 @@ jobs:
 
     steps:
       - name: Trigger Coolify deployment
+        env:
+          COOLIFY_WEBHOOK_URL: ${{ secrets.COOLIFY_WEBHOOK_URL }}
+          COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
         run: |
-          curl -fsSL -X GET "${{ secrets.COOLIFY_WEBHOOK_URL }}" \
-            -H "Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}"
+          if [ -z "$COOLIFY_WEBHOOK_URL" ]; then
+            echo "::error::COOLIFY_WEBHOOK_URL secret is not set. Add it in Settings → Environments → production → secrets."
+            exit 1
+          fi
+          curl -fsSL -X GET "$COOLIFY_WEBHOOK_URL" \
+            -H "Authorization: Bearer $COOLIFY_TOKEN"
 
       - name: Deployment triggered
         run: echo "Deployment triggered for commit ${{ github.sha }} by ${{ github.actor }}"
