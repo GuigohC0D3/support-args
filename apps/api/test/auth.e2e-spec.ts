@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
-import * as request from 'supertest';
+import request from 'supertest';
 import { AppModule } from '../src/app.module';
 
 /**
@@ -34,7 +34,7 @@ describe('Auth (e2e)', () => {
       return request(app.getHttpServer())
         .get('/health')
         .expect(200)
-        .expect((res) => {
+        .expect((res: any) => {
           expect(res.body.status).toBe('ok');
         });
     });
@@ -44,7 +44,7 @@ describe('Auth (e2e)', () => {
     it('retorna 401 para credenciais inválidas', () => {
       return request(app.getHttpServer())
         .post('/auth/login')
-        .send({ email: 'naoexiste@test.com', password: 'wrong' })
+        .send({ email: 'naoexiste@test.com', password: 'wrongpassword' })
         .expect(401);
     });
 
@@ -80,7 +80,7 @@ describe('Auth (e2e)', () => {
         .get('/users/me')
         .set('Authorization', `Bearer ${accessToken}`)
         .expect(200)
-        .expect((res) => {
+        .expect((res: any) => {
           expect(res.body.email).toBe('master@supporthub.com');
           expect(res.body).not.toHaveProperty('passwordHash');
         });

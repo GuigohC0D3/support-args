@@ -4,12 +4,12 @@ const config: Config = {
   moduleFileExtensions: ['js', 'json', 'ts'],
   rootDir: 'src',
   testRegex: '.*\\.spec\\.ts$',
-  transform: { '^.+\\.(t|j)s$': 'ts-jest' },
+  transform: { '^.+\\.(t|j)s$': ['ts-jest', { tsconfig: { types: ['jest', 'node'], esModuleInterop: true, allowSyntheticDefaultImports: true } }] },
   collectCoverageFrom: ['**/*.(t|j)s'],
   coverageDirectory: '../coverage',
   testEnvironment: 'node',
   moduleNameMapper: {
-    '^@support-hub/database$': '<rootDir>/../../packages/database/src',
+    '^@support-hub/database$': '<rootDir>/../../../packages/database/src',
   },
 };
 

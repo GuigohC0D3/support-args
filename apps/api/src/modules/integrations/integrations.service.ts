@@ -11,10 +11,6 @@ export interface IntegrationTicketDto {
   ticket:  { title: string; description: string; category?: string };
 }
 
-const ROLE_WEIGHT: Record<string, number> = {
-  CLIENT: 1, SUPPORT_AGENT: 2, ORG_ADMIN: 3, MASTER_ADMIN: 4,
-};
-
 @Injectable()
 export class IntegrationsService {
   constructor(

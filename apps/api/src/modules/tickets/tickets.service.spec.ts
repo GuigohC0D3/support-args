@@ -3,6 +3,8 @@ import { NotFoundException } from '@nestjs/common';
 import { TicketStatus, TicketPriority, CommentType, HistoryAction } from '@support-hub/database';
 import { TicketsService } from './tickets.service';
 import { PrismaService } from '../../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { IntegrationsService } from '../integrations/integrations.service';
 
 const mockTicket = {
   id: 'ticket-1',
@@ -40,6 +42,9 @@ const mockPrisma = {
   ticketComment: {
     create: jest.fn(),
   },
+  userOrganization: {
+    findUnique: jest.fn().mockResolvedValue({ role: 'SUPPORT_AGENT' }),
+  },
 };
 
 describe('TicketsService', () => {
@@ -50,6 +55,22 @@ describe('TicketsService', () => {
       providers: [
         TicketsService,
         { provide: PrismaService, useValue: mockPrisma },
+        {
+          provide: NotificationsService,
+          useValue: {
+            onTicketCreated: jest.fn().mockResolvedValue(undefined),
+            onStatusChanged: jest.fn().mockResolvedValue(undefined),
+            onTicketAssigned: jest.fn().mockResolvedValue(undefined),
+            onNewComment: jest.fn().mockResolvedValue(undefined),
+          },
+        },
+        {
+          provide: IntegrationsService,
+          useValue: {
+            notifyClientStatusChanged: jest.fn().mockResolvedValue(undefined),
+            notifyClientNewReply: jest.fn().mockResolvedValue(undefined),
+          },
+        },
       ],
     }).compile();
 
@@ -180,6 +201,7 @@ describe('TicketsService', () => {
         body: 'Estamos investigando',
         type: CommentType.PUBLIC,
         createdAt: new Date(),
+        user: { id: 'user-1', name: 'Test User', email: 'test@test.com' },
       });
       mockPrisma.ticket.update.mockResolvedValue({});
       mockPrisma.ticketHistory.create.mockResolvedValue({});
@@ -209,6 +231,7 @@ describe('TicketsService', () => {
         body: 'Segunda resposta',
         type: CommentType.PUBLIC,
         createdAt: new Date(),
+        user: { id: 'user-1', name: 'Test User', email: 'test@test.com' },
       });
       mockPrisma.ticketHistory.create.mockResolvedValue({});
 

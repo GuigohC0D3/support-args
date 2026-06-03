@@ -26,7 +26,7 @@ export class ProjectsService {
 
   async findOne(orgId: string, projectId: string, userId: string, isMasterAdmin: boolean) {
     const project = await this.prisma.project.findFirst({
-      where: { id: projectId, organizationId: orgId },
+      where: { id: projectId, organizationId: orgId, isActive: true },
       include: {
         slaPolicy: true,
         _count: { select: { tickets: true, members: true } },
