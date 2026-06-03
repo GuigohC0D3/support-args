@@ -13,3 +13,4 @@ bun.lockb
 
 # AI assistant context files
 CLAUDE.md
+.claude/scheduled_tasks.lock
